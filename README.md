@@ -87,6 +87,8 @@ The MARSHAL project is built upon the [ROLL](https://github.com/alibaba/ROLL) fr
 
    Backend groups are mutually exclusive and model the Docker matrices directly, so uv will fail fast if multiple incompatible backends are requested together.
 
+   On Linux, these backend groups require a CUDA 12.4 toolkit installation when used outside Docker. In particular, `transformer-engine-torch==2.2.0` is source-only on PyPI and needs `nvcc` available, typically at `/usr/local/cuda/bin/nvcc`. If your machine does not provide `nvcc`, use the provided Docker images instead of a host install.
+
 4. **Install OpenSpiel** MARSHAL uses [OpenSpiel](https://github.com/deepmind/open_spiel) for game environments:
    ```bash
    uv pip install pyspiel
