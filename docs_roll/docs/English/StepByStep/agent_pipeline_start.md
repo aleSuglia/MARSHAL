@@ -41,15 +41,15 @@ Before you begin, ensure you have the following:
 1. **ROLL Project Installed** – The ROLL project should be cloned and properly set up. Please refer to the main `README.md` in the project root for detailed installation instructions. Key requirements often include:  
    * CUDA Version >= 12.4  
    * cuDNN Version >= 9.1.0  
-   * PyTorch >= 2.5.1  
-   * vLLM >= 0.7.3  
-   * SGlang >= 0.4.3  
+  * PyTorch >= 2.6.0  
+  * vLLM >= 0.8.4  
+  * SGlang >= 0.4.6  
    ROLL also provides Docker images for a quick start.
 
 2. **Python Dependencies** – Install all necessary Python dependencies, typically via the requirements file:
 
    ```bash
-   pip install -r requirements.txt   # Or a specific file like requirements_torch260.txt
+  uv sync --group torch260-vllm   # Or use uv sync --group torch260-sglang for the SGLang stack
    ```
 
    Ensure any specific dependencies for your chosen agentic environments or models are also met.

@@ -311,7 +311,7 @@ bash examples/qwen2.5-7B-rlvr_megatron/run_rlvr_pipeline.sh
 * Ensure all necessary dependencies are installed:
 
   ```bash
-  pip install -r requirements.txt
+  uv sync --group torch260-vllm
   ```
 
 * Verify that all model paths in the configuration are accessible.

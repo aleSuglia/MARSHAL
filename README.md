@@ -13,7 +13,7 @@
 ### 🎉 Accepted by ICLR 2026
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/release/python-390/)
+[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-3100/)
 [![arXiv](https://img.shields.io/badge/arXiv-2510.15414-b31b1b.svg)](https://arxiv.org/abs/2510.15414)
 
 [**🌐 Project Page**](https://thu-nics.github.io/MARSHAL/) | [**📝 Paper**](https://arxiv.org/abs/2510.15414) | [**🤗 Models**](https://huggingface.co/collections/nics-efc/marshal)
@@ -68,14 +68,28 @@ By leveraging self-play across strategic games, MARSHAL (based on Qwen3-4B) demo
 
 ## 🛠️ Installation
 
-The MARSHAL project is built upon the [ROLL](https://github.com/alibaba/ROLL) framework.
+The MARSHAL project is built upon the [ROLL](https://github.com/alibaba/ROLL) framework and uses uv for dependency management.
 
-1. **Install ROLL Framework** Please follow the official guide to ensure environment and backend compatibility:  
-   [ROLL Docs – Getting Started](https://alibaba.github.io/ROLL/docs/English/start)
+1. **Install uv** If you do not already have it, install uv first:  
+   [uv Documentation](https://docs.astral.sh/uv/)
 
-2. **Install OpenSpiel** MARSHAL uses [OpenSpiel](https://github.com/deepmind/open_spiel) for game environments:
+2. **Sync the base environment** From the repository root, install the core dependencies with Docker-aligned Python:
    ```bash
-   pip install pyspiel
+   uv sync --python 3.10
+   ```
+
+3. **Choose one backend stack (uv-native groups)** Use exactly one backend group:
+   ```bash
+   uv sync --group torch260-vllm
+   # or
+   uv sync --group torch260-sglang
+   ```
+
+   Backend groups are mutually exclusive and model the Docker matrices directly, so uv will fail fast if multiple incompatible backends are requested together.
+
+4. **Install OpenSpiel** MARSHAL uses [OpenSpiel](https://github.com/deepmind/open_spiel) for game environments:
+   ```bash
+   uv pip install pyspiel
    ```
 
 ---

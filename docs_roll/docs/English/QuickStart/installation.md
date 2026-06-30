@@ -12,15 +12,16 @@ If our pre-built Docker images are not compatible with your environment, you can
 # Prerequisites
 CUDA Version >= 12.4
 cuDNN Version >= 9.1.0
-PyTorch >= 2.5.1
-SGlang >= 0.4.3
-vLLM >= 0.7.3
+PyTorch >= 2.6.0
+SGlang >= 0.4.6
+vLLM >= 0.8.4
 
 # Clone the repository and install
 git clone https://github.com/alibaba/ROLL.git
 cd ROLL
-pip install -r requirements.txt # Or follow your specific installation steps
-# For development, consider: pip install -e .
+uv sync --group torch260-vllm
+# Or use the SGLang stack:
+# uv sync --group torch260-sglang
 ```
 ## 🔄 About Model Checkpoint Format
 
