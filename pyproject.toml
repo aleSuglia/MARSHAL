@@ -43,6 +43,11 @@ dependencies = [
 	"latex2sympy2_extended==1.10.1",
 	"antlr4-python3-runtime==4.9.3",
 	"mcore_adapter",
+	"open-spiel>=1.6.11",
+	"matplotlib>=3.10.9",
+	"click<8.2",
+	"tensorboard>=2.20.0",
+	"setuptools<75",
 ]
 [dependency-groups]
 dev = [
