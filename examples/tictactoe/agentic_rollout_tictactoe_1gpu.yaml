@@ -1,0 +1,107 @@
+defaults:
+  - ../config/envs@_here_
+  - ../config/deepspeed_zero@_here_
+  - ../config/deepspeed_zero2@_here_
+  - ../config/deepspeed_zero3@_here_
+  - ../config/deepspeed_zero3_cpuoffload@_here_
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+
+exp_name: "agentic_pipeline"
+seed: 42
+# logging_dir: ./runs/logs
+# output_dir: ./runs
+# render_save_dir: ./runs/render
+system_envs:
+  USE_MODELSCOPE: '0'
+  TORCHINDUCTOR_COMPILE_THREADS: '1'
+
+track_with: tensorboard
+tracker_kwargs:
+  log_dir: ./runs/tensorboard
+
+num_gpus_per_node: 1
+
+max_steps: 1
+save_steps: 10000
+logging_steps: 1
+eval_steps: 10
+resume_from_checkpoint: false
+
+rollout_batch_size: 6
+sequence_length: 4096
+
+reward_clip: 20
+advantage_clip: 10.0
+ppo_epochs: 1
+adv_estimator: "reinforce"
+init_kl_coef: 0.0
+whiten_advantages: true
+entropy_loss_coef: 0
+
+# Update this path to your local model (e.g. a HuggingFace model ID or local path)
+pretrain: Qwen/Qwen3-0.6B
+
+actor_infer:
+  model_args:
+  #   flash_attn: fa2
+    disable_gradient_checkpointing: true
+  #   dtype: bf16
+  generating_args:
+    max_new_tokens: 512
+    top_p: 0.99
+    top_k: 100
+    num_beams: 1
+    temperature: 0.6
+    num_return_sequences: 1
+  data_args:
+    template: qwen3
+  strategy_args:
+    strategy_name: sglang
+    strategy_config:
+      mem_fraction_static: 0.9
+      load_format: auto
+  device_mapping: list(range(0,1))
+
+enable_response_mask: True
+action_sep: "||"
+use_turn_scores: False
+enable_think: False
+max_actions_per_traj: 10
+
+custom_envs:
+  TicTacToe:
+    env_type: tictactoe
+    max_actions_per_traj: ${max_actions_per_traj}
+    grid_vocab: false
+    env_config:
+      built_in_opponent: none
+      render_mode: text
+
+  TicTacToe-first-100:
+    env_type: tictactoe
+    max_actions_per_traj: ${max_actions_per_traj}
+    grid_vocab: false
+    env_config:
+      built_in_opponent: mcts
+      render_mode: text
+
+  TicTacToe-second-100:
+    env_type: tictactoe
+    max_actions_per_traj: ${max_actions_per_traj}
+    grid_vocab: false
+    env_config:
+      built_in_opponent: mcts
+      opponent_player: 0
+      render_mode: text
+
+train_env_manager:
+  format_penalty: 0.05
+  max_env_num_per_worker: 6
+  env_groups: 6
+  group_size: 1
+  tags: [TicTacToe, TicTacToe-first-100, TicTacToe-second-100]
+  n_groups: [2, 2, 2]
