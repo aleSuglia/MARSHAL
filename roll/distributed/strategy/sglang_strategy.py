@@ -125,7 +125,11 @@ class SgLangStrategy(InferenceStrategy):
 
         import asyncio
 
-        self.event_loop = asyncio.get_event_loop()
+        try:
+            self.event_loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self.event_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.event_loop)
 
     def op_compute_log_probs(self, logits: torch.Tensor, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         pass

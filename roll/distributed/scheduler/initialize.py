@@ -43,7 +43,13 @@ def start_ray_cluster():
         return False
 
     if rank == 0:
-        cmd = f"ray start --head --port={master_port} --node-name={node_name}"
+        # cmd = f"ray start --head --port={master_port} --node-name={node_name}"
+        try:
+            import torch
+            num_gpus = torch.cuda.device_count()
+        except Exception:
+            num_gpus = 0
+        cmd = f"ray start --head --port={master_port} --node-name={node_name} --num-gpus={num_gpus}"
     else:
         # fix: 处理大规模下可能会出现的head/worker node创建顺序不一致问题
         time.sleep(5)
