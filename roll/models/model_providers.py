@@ -2,6 +2,7 @@ import os
 from typing import Optional, List
 
 import torch
+from peft import LoraConfig, TaskType, get_peft_model
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
@@ -19,6 +20,13 @@ from transformers.modeling_utils import is_fsdp_enabled
 
 try:
     from mcore_adapter import TrainingArguments as mca_TrainingArguments
+    from mcore_adapter.adapters import (
+        apply_megatron_lora,
+        find_all_embedding_modules,
+        find_all_linear_modules,
+        find_all_router_modules,
+        set_linear_is_expert,
+    )
     from mcore_adapter.models import AutoModel
 except Exception as e:
     mca_TrainingArguments = None
@@ -90,6 +98,42 @@ def freeze_model(model, model_args: "ModelArguments"):
             param.requires_grad_(False)
 
 
+# Inspired by: https://github.com/hiyouga/LLaMA-Factory/blob/main/src/llamafactory/model/adapter.py
+def setup_lora_training(
+    config, model, model_args: "ModelArguments", is_trainable: Optional[bool] = False, is_mca: Optional[bool] = False
+):
+    model.enable_input_require_grads()
+    if is_trainable:
+
+        def get_target_modules(model: "torch.nn.Module", model_args: "ModelArguments"):
+            target_modules = list(model_args.lora_target)
+            if "all-linear" in target_modules:
+                target_modules.remove("all-linear")
+                target_modules += find_all_linear_modules(model)
+            if "all-embedding" in target_modules:
+                target_modules.remove("all-embedding")
+                target_modules += find_all_embedding_modules(model)
+            if "all-router" in target_modules:
+                target_modules.remove("all-router")
+                target_modules += find_all_router_modules(model)
+            return target_modules
+
+        target_modules = get_target_modules(model, model_args)
+        lora_config = {
+            "r": model_args.lora_rank,
+            "target_modules": target_modules,
+            "lora_alpha": model_args.lora_alpha,
+            "lora_dropout": model_args.lora_dropout,
+            "modules_to_save": model_args.additional_target,
+        }
+        if not is_mca:
+            lora_config.update({"task_type": TaskType.CAUSAL_LM})
+        model = get_peft_model(
+            model, LoraConfig(**lora_config), autocast_adapter_dtype=model_args.autocast_adapter_dtype
+        )
+    return model
+
+
 def load_model(
     model_args: "ModelArguments",
     is_trainable: Optional[bool] = False,
@@ -125,7 +169,10 @@ def load_model(
     if not model_args.disable_gradient_checkpointing:
         model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
 
-    freeze_model(model, model_args)
+    if model_args.lora_target is None:
+        freeze_model(model, model_args)
+    else:
+        model = setup_lora_training(config, model, model_args, is_trainable)
 
     if add_valuehead:
         from trl import AutoModelForCausalLMWithValueHead
@@ -343,7 +390,12 @@ def default_actor_model_provider(
             model.eval()
             for param in model.parameters():
                 param.requires_grad = False
-        freeze_model(model, model_args)
+        if model_args.lora_target is None:
+            freeze_model(model, model_args)
+        else:
+            apply_megatron_lora()
+            set_linear_is_expert(model[0])
+            model.models[0] = setup_lora_training(model[0].config, model[0], model_args, is_trainable, is_mca=True)
         patch_model(model, config, use_mcore=True)
     else:
         # hf

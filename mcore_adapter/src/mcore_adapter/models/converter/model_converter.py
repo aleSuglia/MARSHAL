@@ -16,6 +16,7 @@ from transformers.utils import (
     SAFE_WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
     WEIGHTS_NAME,
+    is_peft_available,
     is_safetensors_available,
 )
 
@@ -36,6 +37,9 @@ from .template import get_template
 
 if is_safetensors_available():
     from safetensors.torch import save_file as safe_save_file
+
+if is_peft_available():
+    from peft import PeftModel
 
 
 if TYPE_CHECKING:
@@ -162,10 +166,27 @@ class ModelConverter:
                 virtual_pipeline_model_parallel_rank=vp,
                 revert=True,
             )
-            mca_state_dict = model.state_dict_for_save_checkpoint()
-            mca_state_dict = {k: v for k, v in mca_state_dict.items() if not k.endswith("._extra_state")}
-            for mca_name, weight in sorted(mca_state_dict.items()):
-                yield dist_reverter, mca_name, weight
+            is_lora = is_peft_available() and isinstance(model, PeftModel)
+            if is_lora:
+                model.base_model.merge_adapter()
+            try:
+                mca_state_dict = model.state_dict_for_save_checkpoint()
+                mca_state_dict = {k: v for k, v in mca_state_dict.items() if not k.endswith("._extra_state")}
+                if is_lora:
+                    # Merge folded the LoRA delta into base_layer.weight; export the merged full
+                    # weights under their original (pre-LoRA) names, dropping the now-redundant
+                    # adapter-only lora_A/lora_B tensors.
+                    merged_state_dict = {}
+                    for name, weight in mca_state_dict.items():
+                        if ".lora_A." in name or ".lora_B." in name:
+                            continue
+                        merged_state_dict[name.replace(".base_layer.", ".")] = weight
+                    mca_state_dict = merged_state_dict
+                for mca_name, weight in sorted(mca_state_dict.items()):
+                    yield dist_reverter, mca_name, weight
+            finally:
+                if is_lora:
+                    model.base_model.unmerge_adapter()
 
     def save_model_as_hf_inflight(
         self,

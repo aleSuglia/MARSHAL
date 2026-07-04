@@ -1671,6 +1671,7 @@ dependencies = [
     { name = "tensorboard", version = "2.20.0", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
     { name = "tensorboard", version = "2.21.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
     { name = "tensordict" },
+    { name = "torchao" },
     { name = "tqdm" },
     { name = "transformers", version = "4.51.1", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-7-marshal-torch260-sglang'" },
     { name = "transformers", version = "4.51.2", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-7-marshal-torch260-vllm' or extra != 'group-7-marshal-torch260-sglang'" },
@@ -1729,7 +1730,7 @@ requires-dist = [
     { name = "loralib" },
     { name = "math-verify" },
     { name = "matplotlib", specifier = ">=3.10.9" },
-    { name = "mcore-adapter", directory = "mcore_adapter" },
+    { name = "mcore-adapter", editable = "mcore_adapter" },
     { name = "modelscope" },
     { name = "more-itertools" },
     { name = "numpy", specifier = ">=1.25,<2.0a0" },
@@ -1745,6 +1746,7 @@ requires-dist = [
     { name = "sympy", specifier = "==1.13.1" },
     { name = "tensorboard", specifier = ">=2.20.0" },
     { name = "tensordict" },
+    { name = "torchao", specifier = "==0.12.0" },
     { name = "tqdm" },
     { name = "transformers", specifier = ">=4.48.3,<4.52" },
     { name = "trl", specifier = "==0.9.6" },
@@ -1835,7 +1837,7 @@ wheels = [
 
 [[package]]
 name = "mcore-adapter"
-source = { directory = "mcore_adapter" }
+source = { editable = "mcore_adapter" }
 dependencies = [
     { name = "accelerate" },
     { name = "megatron-core" },
@@ -4003,11 +4005,11 @@ wheels = [
 
 [[package]]
 name = "torchao"
-version = "0.17.0"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/32/fe/a4036a8e80fa800c92dbcbf75f541cd4c106248b6b579db6dab1800f616a/torchao-0.17.0-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:87a418ce0ec064a821ceab83c921b501acef0ce9a6ccd1be358fcd16c3ae8c58", size = 3206172, upload-time = "2026-03-30T22:25:52.974Z" },
-    { url = "https://files.pythonhosted.org/packages/c9/37/ef37ca885265e5f79a168616767dd416a3cea1cc3b28bb6b503ce4a5b652/torchao-0.17.0-py3-none-any.whl", hash = "sha256:02eba449036715b9ae784fbaa1a6f97994bb7b0421ce92d1d5d1c08e5bd6d349", size = 1200680, upload-time = "2026-03-30T22:25:54.457Z" },
+    { url = "https://files.pythonhosted.org/packages/72/5e/f5df5e0bbc7d84e5da3b4599b5bad58f4a6657b22bcae64dd741faee80ab/torchao-0.12.0-cp39-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:326ea2800cc7d9d50f0d17742ad923e5c6d4c4dd5942558f4ed13db00bdebc7c", size = 6777967, upload-time = "2025-07-17T17:50:13.567Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/5f/6bf9b5bed6d31e286516d23e1db7320d2ccfbf1b2234749833ad1e3d25a5/torchao-0.12.0-py3-none-any.whl", hash = "sha256:103f2a9164d2e4f705332af1aafbb8473eadd14d9164e45857ca187cde1f13d2", size = 962232, upload-time = "2025-07-17T17:50:15.119Z" },
 ]
 
 [[package]]

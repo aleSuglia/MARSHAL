@@ -13,6 +13,7 @@ from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_with_transformer_engine_spec,
 )
 from megatron.core.transformer.module import MegatronModule
+from transformers.utils import is_peft_available
 
 from ..checkpointing import (
     ensure_directory_exists,
@@ -24,7 +25,11 @@ from ..utils import get_logger
 from .converter.convert_utils import MAX_SHARD_SIZE
 from .converter.model_converter import ModelConverter
 from .model_config import McaModelConfig
-from .model_utils import ModuleUtilsMixin, RMSNorm, exists_hf_config, exists_mca_config
+from .model_utils import ModuleUtilsMixin, RMSNorm, exists_hf_config, exists_mca_config, mca_lora_logits_postprocess_hook
+
+
+if is_peft_available():
+    from peft import PeftModel, get_peft_model_state_dict, set_peft_model_state_dict
 
 
 if TYPE_CHECKING:
@@ -46,6 +51,17 @@ class VirtualModels:
 
     def save_pretrained(self, save_directory: str):
         if len(self.models) == 1:
+            if is_peft_available() and isinstance(self.models[0], PeftModel):
+                for adapter_name, peft_config in self.models[0].peft_config.items():
+                    adapter_save_directory = os.path.join(save_directory, adapter_name)
+                    peft_config.save_pretrained(adapter_save_directory)
+                    peft_state_dict = get_peft_model_state_dict(
+                        self.models[0], self.models[0].state_dict_for_save_checkpoint(), adapter_name
+                    )
+                    self.models[0].base_model.model.save_pretrained(
+                        adapter_save_directory, state_dict={"model": peft_state_dict}
+                    )
+                return self.config.save_pretrained(save_directory)
             return self.models[0].save_pretrained(save_directory)
         state_dict = {f"model{i}": model.state_dict_for_save_checkpoint() for i, model in enumerate(self.models)}
         return self.models[0].save_pretrained(save_directory, state_dict=state_dict)
@@ -54,6 +70,18 @@ class VirtualModels:
         if len(self.models) == 1:
             if "model" in state_dict:
                 state_dict = state_dict["model"]
+            if is_peft_available() and isinstance(self.models[0], PeftModel):
+                all_missing_keys, all_unexpected_keys = [], []
+                for adapter_name in self.models[0].peft_config.keys():
+                    ret = set_peft_model_state_dict(
+                        self.models[0].base_model.model,
+                        state_dict[adapter_name]["model"] if "model" in state_dict[adapter_name] else state_dict[adapter_name],
+                        adapter_name,
+                    )
+                    if not strict:
+                        all_missing_keys.extend(ret[0])
+                        all_unexpected_keys.extend(ret[1])
+                return all_missing_keys, all_unexpected_keys
             return self.models[0].load_state_dict(state_dict, strict=strict)
         all_missing_keys, all_unexpected_keys = [], []
         for i, model in enumerate(self.models):
@@ -253,6 +281,18 @@ class PretrainedModel(MegatronModule, ModuleUtilsMixin):
 
         return batch
 
+    def enable_input_require_grads(self):
+        """
+        Enables the gradients for the input embeddings. This is useful for fine-tuning adapter weights while keeping
+        the model weights fixed.
+        """
+
+        def make_inputs_require_grads(module, input, output):
+            output.requires_grad_(True)
+
+        if hasattr(self, "embedding"):
+            self._require_grads_hook = self.embedding.register_forward_hook(make_inputs_require_grads)
+
 
 class McaGPTModel(GPTModel, PretrainedModel):
     main_input_name: str = "input_ids"
@@ -279,6 +319,9 @@ class McaGPTModel(GPTModel, PretrainedModel):
             tensor_parallel.set_defaults_if_not_set_tensor_model_parallel_attributes(param)
         if not config.use_cpu_initialization:
             self.cuda(torch.cuda.current_device())
+
+        if self.post_process:
+            self.output_layer.register_forward_hook(mca_lora_logits_postprocess_hook)
 
     def _get_transformer_layer_spec(self, config: Optional["McaModelConfig"]=None):
         config = config or self.config

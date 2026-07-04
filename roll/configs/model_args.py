@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import torch
 
@@ -14,6 +14,39 @@ class ModelArguments:
         default=None,
         metadata={
             "help": "Path to the model weight or identifier from huggingface.co/models or modelscope.cn/models."
+        },
+    )
+    lora_rank: Optional[int] = field(
+        default=8,
+        metadata={"help": "The intrinsic dimension for LoRA fine-tuning."},
+    )
+    lora_alpha: Optional[int] = field(
+        default=None,
+        metadata={"help": "The scale factor for LoRA fine-tuning (default: lora_rank * 2)."},
+    )
+    lora_dropout: Optional[float] = field(
+        default=0.0,
+        metadata={"help": "Dropout rate for the LoRA fine-tuning."},
+    )
+    lora_target: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "Name(s) of target modules to apply LoRA, comma-separated. "
+                "Use 'all-linear' to target all linear modules. Leave unset to disable LoRA."
+            )
+        },
+    )
+    additional_target: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Name(s) of modules apart from LoRA layers to be set as trainable and saved in the final checkpoint."
+        },
+    )
+    autocast_adapter_dtype: bool = field(
+        default=True,
+        metadata={
+            "help": "Whether to autocast the LoRA adapter dtype to float32 for stable training."
         },
     )
     attn_implementation: Optional[str] = field(
@@ -70,6 +103,13 @@ class ModelArguments:
 
         if self.attn_implementation == "fa2":
             self.attn_implementation = "flash_attention_2"
+
+        self.lora_alpha = self.lora_alpha or self.lora_rank * 2
+        if self.lora_target is not None and not any(c in self.lora_target for c in ["*", "$", "|", "("]):
+            # split when lora_target is not a regex expression
+            self.lora_target: Optional[List[str]] = [item.strip() for item in self.lora_target.split(",")]
+        if self.additional_target is not None:
+            self.additional_target: Optional[List[str]] = [item.strip() for item in self.additional_target.split(",")]
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

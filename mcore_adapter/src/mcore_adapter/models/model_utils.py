@@ -106,6 +106,37 @@ class RMSNorm(nn.Module):
         return self.weight * hidden_states.to(input_dtype)
 
 
+class _McaLoraLogitsHelper(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, logits: "torch.Tensor"):
+        return logits
+
+    @staticmethod
+    def backward(ctx, grad_output: "torch.Tensor"):
+        if grad_output.size(1) == 1:
+            # tensor.contiguous() does not change strides[1] with shape [sequence_length, 1, vocab_size]
+            return grad_output.contiguous().view_as(grad_output)
+        return grad_output.contiguous()
+
+
+def _mca_lora_logits_postprocess(logits: "torch.Tensor"):
+    """make sure grad_output is contiguous
+    Args:
+        logits: logits split across tensor parallel ranks
+            dimension is [sequence_length, batch_size, vocab_size/num_parallel_ranks]
+    Returns:
+        contiguous logits
+    (It's fine to change the order of sequence_length and batch_size in dimension)
+    """
+    return _McaLoraLogitsHelper.apply(logits)
+
+
+def mca_lora_logits_postprocess_hook(module, input, output):
+    logits, other = output
+    logits = _mca_lora_logits_postprocess(logits)
+    return logits, other
+
+
 def exists_hf_config(model_name_or_path: str) -> bool:
     return os.path.exists(os.path.join(model_name_or_path, "config.json"))
 
