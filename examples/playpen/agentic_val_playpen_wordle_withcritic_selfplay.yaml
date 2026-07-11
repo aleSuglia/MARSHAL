@@ -1,0 +1,164 @@
+defaults:
+  - ../config/envs@_here_
+  - ../config/deepspeed_zero@_here_
+  - ../config/deepspeed_zero2@_here_
+  - ../config/deepspeed_zero3@_here_
+  - ../config/deepspeed_zero3_cpuoffload@_here_
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+
+exp_name: "agentic_pipeline"
+seed: 42
+logging_dir: ./runs/${exp_name}/output/logs
+output_dir: ./runs/${exp_name}/output
+
+system_envs:
+  USE_MODELSCOPE: "1"
+
+track_with: tensorboard
+tracker_kwargs:
+  log_dir: ./runs/${exp_name}/tensorboard_logs
+
+num_gpus_per_node: 1
+
+max_steps: 200
+save_steps: 20
+logging_steps: 1
+eval_steps: 5
+resume_from_checkpoint: false
+
+# Kept deliberately small -- see claude_notes/SESSION_2026-07-04_lora_and_oom_debugging.md
+# and the 2026-07-05 playpen-integration session notes: this box has only 15GB host RAM,
+# and the full training pipeline (actor_train + actor_infer + reference all loaded at once)
+# reliably runs out of memory even at env_groups=1 per game if more than one game/model
+# copy is combined. Scale up on a bigger machine.
+rollout_batch_size: 4
+val_batch_size: 4
+sequence_length: 8192
+
+dual_clip_loss: true
+ppo_epochs: 1
+adv_estimator: "reinforce"
+init_kl_coef: 0.0
+use_kl_loss: true
+kl_loss_coef: 0.20
+
+whiten_advantages: true
+entropy_loss_coef: 0
+
+pretrain: Qwen/Qwen3-0.6B
+
+# Same LoRA + Megatron single-GPU recipe already validated for tictactoe/playpen-wordle on
+# this box (6GB VRAM RTX 3060 Laptop). Full fine-tuning OOMs the Megatron distributed
+# optimizer with only one DP rank; LoRA keeps the optimizer state small enough to fit.
+actor_train:
+  model_args:
+    flash_attn: fa2
+    disable_gradient_checkpointing: false
+    dtype: bf16
+    model_type: ~
+    lora_rank: 16
+    lora_alpha: 16
+    lora_target: all-linear
+  training_args:
+    lr_scheduler_type: cosine_with_min_lr
+    learning_rate: 1e-6
+    weight_decay: 0.05
+    adam_beta1: 0.9
+    adam_beta2: 0.95
+    per_device_train_batch_size: 2
+    gradient_accumulation_steps: 2
+    warmup_steps: 10
+  data_args:
+    template: qwen3
+  strategy_args:
+    strategy_name: megatron_train
+    strategy_config:
+      sequence_parallel: false
+      tensor_model_parallel_size: 1
+      pipeline_model_parallel_size: 1
+      expert_model_parallel_size: 1
+      use_distributed_optimizer: true
+      recompute_granularity: full
+      accumulate_allreduce_grads_in_fp32: true
+      check_for_nan_in_loss_and_grad: false
+  device_mapping: list(range(0,1))
+  infer_batch_size: 2
+
+actor_infer:
+  model_args:
+    flash_attn: fa2
+    disable_gradient_checkpointing: true
+    dtype: bf16
+  generating_args:
+    max_new_tokens: 2048
+    top_p: 0.99
+    top_k: 100
+    num_beams: 1
+    temperature: 0.6
+    num_return_sequences: 1
+  data_args:
+    template: qwen3
+  strategy_args:
+    strategy_name: sglang
+    strategy_config:
+      mem_fraction_static: 0.8
+      load_format: auto
+  device_mapping: list(range(0,1))
+
+reference:
+  model_args:
+    flash_attn: fa2
+    disable_gradient_checkpointing: true
+    dtype: bf16
+    model_type: ~
+  data_args:
+    template: qwen3
+  strategy_args:
+    strategy_name: hf_infer
+    strategy_config: ~
+  device_mapping: list(range(0,1))
+  infer_batch_size: 2
+
+enable_response_mask: True
+action_sep: "||"
+use_turn_scores: True
+enable_think: False
+max_actions_per_traj: 10
+reward_normalization:
+  grouping: tags
+  method: mean
+  # wordle_withcritic is a cooperative multi-role game (every role played by the same learner policy) -- separate_norm_for_selfplay still applies since roles can
+  # differ in response length/difficulty even under a shared/cooperative reward, matching
+  # how it's already used for the cooperative hanabi env.
+  separate_norm_for_selfplay: true
+whiten_rewards: true
+advantage_norm: mean
+pg_clip_high: 0.20
+
+custom_envs:
+  PlaypenWordleWithCritic:
+    env_type: playpen
+    max_actions_per_traj: ${max_actions_per_traj}
+    grid_vocab: false
+    env_config:
+      game_name: wordle_withcritic
+      built_in_opponent: none
+
+train_env_manager:
+  format_penalty: 0.05
+  max_env_num_per_worker: 1
+  env_groups: 1
+  group_size: 1
+  tags: [PlaypenWordleWithCritic]
+  n_groups: [1]
+
+val_env_manager:
+  max_env_num_per_worker: 1
+  env_groups: 1
+  group_size: 1
+  tags: [PlaypenWordleWithCritic]
+  n_groups: [1]

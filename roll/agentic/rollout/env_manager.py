@@ -18,6 +18,7 @@ from tensordict import TensorDict
 from transformers import AutoTokenizer, PreTrainedTokenizer, ProcessorMixin
 
 from roll.agentic.env import REGISTERED_ENVS, REGISTERED_ENV_CONFIGS
+from roll.agentic.env.base import BaseLanguageBasedEnv
 from roll.distributed.scheduler.generate_scheduler import GlobalCounter, RequestScheduler
 from roll.distributed.scheduler.protocol import DataProto
 from roll.pipeline.agentic.agentic_config import EnvManagerConfig, AgenticConfig
@@ -453,10 +454,16 @@ class EnvManager:
             responses = lm_output.non_tensor_batch["response_texts"]
             token_lengths = list(map(lambda x: len(self.tokenizer.encode(x)) + 1, responses))  # + 1 for eos token
 
-        responses = [
-            "<think>\n" + response if self.pipeline_config.enable_think else "<answer>" + response
-            for response in responses
-        ]  # The LLM generation does not include <think> tags. Add them back here.
+        if isinstance(self.env_entry["env"], BaseLanguageBasedEnv):
+            # No MARSHAL-imposed <think>/<answer> wrapper for free-text envs (e.g.
+            # Playpen/clembench) -- the generation prompt was never forced to continue with
+            # one (see _format_messages), so nothing needs to be re-attached here.
+            pass
+        else:
+            responses = [
+                "<think>\n" + response if self.pipeline_config.enable_think else "<answer>" + response
+                for response in responses
+            ]  # The LLM generation does not include <think> tags. Add them back here.
 
         env_ids = lm_output.non_tensor_batch["env_ids"]
         env_id = env_ids[0]
@@ -701,6 +708,15 @@ class EnvManager:
 
     def _extract_map_valid_actions(self, entry: Dict, actions: List[str], legal_actions: Dict[int,str]):
         """extract valid actions from the action lookup table (if exists)"""
+        if isinstance(entry["env"], BaseLanguageBasedEnv):
+            # Free-text action space, and no MARSHAL-imposed format at all (see
+            # _parse_response): the raw response is always forwarded as-is, never flagged as
+            # a MARSHAL-level format failure. The env's own game logic (e.g. clemgame's
+            # GameMaster) is the only thing that judges validity, reporting the outcome back
+            # through the normal rewards/done/info path -- MARSHAL never injects its own
+            # reward here.
+            return actions or [""], False
+
         mapped_actions = []
         action_lookup = getattr(entry["env"].config, "action_lookup", None)
         if action_lookup is None:
@@ -746,8 +762,13 @@ class EnvManager:
                 "legal_actions": turn['legal_actions'],
             }
             if idx == 0 and env_input is not None:
-                length_penalty = self.compute_length_penalty(env_input["token_length"])
-                num_actions_info['reward'] += format_reward + length_penalty
+                if not isinstance(self.env_entry["env"], BaseLanguageBasedEnv):
+                    # No MARSHAL-imposed reward shaping for free-text envs (e.g.
+                    # Playpen/clembench) -- the reward already in turn['rewards'] (read above
+                    # into num_actions_info['reward']) comes entirely from the env's own
+                    # step(), with nothing added on top.
+                    length_penalty = self.compute_length_penalty(env_input["token_length"])
+                    num_actions_info['reward'] += format_reward + length_penalty
                 num_actions_info.update({
                     'llm_response': env_input["llm_response"], 
                     'llm_raw_response': env_input["llm_raw_response"], 
@@ -829,23 +850,34 @@ class EnvManager:
                 )
             messages[-1]["content"] += turn_idx_content
             if "state" in content:
+                # Free-text envs (e.g. Playpen/clembench games) have no enumerable legal-actions
+                # set, and their "state" text is already the complete, ready-to-show turn prompt
+                # built by the game's own logic -- show it as-is instead of re-wrapping it in the
+                # GAME STATE/LEGAL ACTIONS framing used for discrete-action envs.
+                is_language_env = isinstance(self.env_entry["env"], BaseLanguageBasedEnv)
                 if is_opponent_turn:
                     if self.env_entry["env"].include_opponent_turn == "full":
-                        messages[-1]["content"] += (
-                            f"GAME STATE:\n{content['state']}\n\n"
-                            f"LEGAL ACTIONS:\n{', '.join(content['legal_actions'].values())}.\n\n"
-                        )
-                    elif self.env_entry["env"].include_opponent_turn == "action_full":
+                        if is_language_env:
+                            messages[-1]["content"] += f"{content['state']}\n\n"
+                        else:
+                            messages[-1]["content"] += (
+                                f"GAME STATE:\n{content['state']}\n\n"
+                                f"LEGAL ACTIONS:\n{', '.join(content['legal_actions'].values())}.\n\n"
+                            )
+                    elif self.env_entry["env"].include_opponent_turn == "action_full" and not is_language_env:
                         messages[-1]["content"] += (
                             f"LEGAL ACTIONS:\n{', '.join(content['legal_actions'].values())}.\n\n"
                         )
                     if len(content['actions']) > 0:
                         messages[-1]["content"] += f"CHOSEN ACTION:\n{content['actions']}\n"
                 else:
-                    messages[-1]["content"] += (
-                        f"GAME STATE:\n{content['state']}\n\n"
-                        f"LEGAL ACTIONS:\n{', '.join(content['legal_actions'].values())}.\n\n"
-                    )
+                    if is_language_env:
+                        messages[-1]["content"] += f"{content['state']}\n\n"
+                    else:
+                        messages[-1]["content"] += (
+                            f"GAME STATE:\n{content['state']}\n\n"
+                            f"LEGAL ACTIONS:\n{', '.join(content['legal_actions'].values())}.\n\n"
+                        )
             if "llm_raw_response" in content and not is_opponent_turn:
                 messages.append(
                     {
@@ -880,7 +912,11 @@ class EnvManager:
                 )
             text = text[len(prompt_text) :]
         if not prepare_for_update:
-            if self.pipeline_config.enable_think:
+            if isinstance(self.env_entry["env"], BaseLanguageBasedEnv):
+                pass  # no MARSHAL-imposed wrapper -- let the model respond freely, exactly
+                # as clemgame itself expects (e.g. "CLUE: ..."/"GUESS: ..."), with nothing
+                # forced onto the generation prompt.
+            elif self.pipeline_config.enable_think:
                 text += "<think>\n"  # force the LLM to think before answering
             else:
                 text += "<answer>"  # force the LLM to answer
@@ -891,6 +927,24 @@ class EnvManager:
         return [text], [messages]
 
     def _parse_response(self, response: str) -> List:
+        if isinstance(self.env_entry["env"], BaseLanguageBasedEnv):
+            # No MARSHAL-imposed <think>/<answer> wrapper for free-text envs (e.g.
+            # Playpen/clembench): the entire response is the action, exactly as clemgame
+            # itself expects (e.g. "CLUE: ..."/"GUESS: ..."). Strip any <think>...</think>
+            # block *and its content* -- some models (e.g. Qwen3) fall back to their own
+            # native thinking-mode habit even with enable_think: False and nothing forcing
+            # a wrapper, and leftover reasoning text prepended to the action breaks
+            # clemgame's own format check (e.g. Taboo's `utterance.startswith("CLUE:")`).
+            # This is response hygiene (so the model is judged on its actual move, not on
+            # whether it happened to emit a reasoning trace), not a MARSHAL reward-shaping
+            # format requirement -- clemgame's own GameMaster is the only thing that judges
+            # whether the resulting text is a valid move.
+            action_content = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL)
+            for special_token in self.pipeline_config.special_token_list:
+                action_content = action_content.replace(special_token, "")
+            action_content = action_content.strip()
+            return action_content, [action_content] if action_content else []
+
         pattern = (
             r"^<think>(.*?)</think>\s*<answer>(.*?)</answer>$"
             if self.pipeline_config.enable_think

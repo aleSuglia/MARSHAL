@@ -14,7 +14,7 @@ dependencies = [
 	"sympy==1.13.1",
 	"transformers>=4.48.3,<4.52",
 	"modelscope",
-	"datasets==3.1.0",
+	"datasets>=4.4.0,<5.0.0",
 	"tqdm",
 	"peft==0.12.0",
 	"tyro>=0.5.7",
@@ -78,11 +78,22 @@ torch260-sglang = [
 	"transformers==4.51.1; platform_system == 'Linux'",
 	"cuda-bindings==12.9.0; platform_system == 'Linux'",
 ]
+# clemcore (Playpen/clembench game-environment integration) is an optional group, not a
+# base dependency: it pulls in `mistralai`, which transitively requires
+# opentelemetry-api>=1.33.1 for every non-yanked version in its allowed range. This is
+# incompatible with vllm==0.8.4's own opentelemetry-api<1.27.0 pin (see the `conflicts`
+# entry below), so this group can only be installed alongside torch260-sglang, not
+# torch260-vllm.
+playpen = [
+	"clemcore>=3.7.0,<4.0.0",
+	"scikit-learn",  # required by clembench's privateshared game (clembench/requirements.txt), not by clemcore itself
+]
 
 [tool.uv]
 no-build-isolation-package = ["transformer-engine", "transformer-engine-torch"]
 conflicts = [
 	[{ group = "torch260-vllm" }, { group = "torch260-sglang" }],
+	[{ group = "torch260-vllm" }, { group = "playpen" }],
 ]
 
 [tool.setuptools.packages.find]
