@@ -22,6 +22,12 @@ track_with: tensorboard
 tracker_kwargs:
   log_dir: ./runs/${exp_name}/tensorboard_logs
 
+# MARSHAL's own paper-reproduction configs (examples/{hanabi,connect_four,kuhn_poker,
+# leduc_poker}/agentic_val_*_selfplay.yaml, untouched originals) use num_gpus_per_node: 8 /
+# device_mapping: list(range(0,8)) with tensor_model_parallel_size: 4. Restricted to a
+# single GPU here per request -- tensor_model_parallel_size necessarily drops to 1 (can't
+# shard tensor parallelism across one device) and sequence_parallel is meaningless at TP=1,
+# but every other hyperparameter below matches those pristine files exactly.
 num_gpus_per_node: 1
 
 max_steps: 200
@@ -30,14 +36,16 @@ logging_steps: 1
 eval_steps: 5
 resume_from_checkpoint: false
 
-# Kept deliberately small -- see claude_notes/SESSION_2026-07-04_lora_and_oom_debugging.md
-# and the 2026-07-05 playpen-integration session notes: this box has only 15GB host RAM,
-# and the full training pipeline (actor_train + actor_infer + reference all loaded at once)
-# reliably runs out of memory even at env_groups=1 per game if more than one game/model
-# copy is combined. Scale up on a bigger machine.
-rollout_batch_size: 4
-val_batch_size: 4
-sequence_length: 8192
+# Matches the paper/pristine specialist configs exactly (rollout_batch_size: 128 with
+# env_groups: 64 below -> 2 trajectories/env/step, same ratio as
+# examples/connect_four/agentic_val_connect4_selfplay.yaml). This will very likely not fit
+# in a small single GPU's VRAM/host RAM -- see
+# claude_notes/SESSION_2026-07-04_lora_and_oom_debugging.md -- kept faithful to the paper
+# regardless, per request; scale down env_groups/rollout_batch_size if you need this to
+# actually complete on constrained hardware.
+rollout_batch_size: 128
+val_batch_size: 128
+sequence_length: 32768
 
 dual_clip_loss: true
 ppo_epochs: 1
@@ -49,11 +57,20 @@ kl_loss_coef: 0.20
 whiten_advantages: true
 entropy_loss_coef: 0
 
+# The paper's own runs (see examples/hanabi/agentic_val_hanabi_selfplay.yaml etc.) used
+# Qwen3-4B on 8 GPUs. Kept at the smaller Qwen3-0.6B here since that's what's actually been
+# validated (rollout/eval) on this single-GPU box -- swap to a real Qwen3-4B path/ID if
+# running on hardware that can fit it.
 pretrain: Qwen/Qwen3-0.6B
 
-# Same LoRA + Megatron single-GPU recipe already validated for tictactoe/playpen-wordle on
-# this box (6GB VRAM RTX 3060 Laptop). Full fine-tuning OOMs the Megatron distributed
-# optimizer with only one DP rank; LoRA keeps the optimizer state small enough to fit.
+# LoRA (not the paper's own methodology -- the pristine examples/*/agentic_val_*_selfplay.yaml
+# files have no lora_rank/lora_alpha/lora_target fields at all, i.e. full fine-tuning).
+# Re-added deliberately: full fine-tuning needs Megatron's distributed optimizer to shard
+# optimizer state across multiple data-parallel ranks to fit in small VRAM, and with only 1
+# GPU (1 DP rank) nothing is actually sharded -- confirmed this OOMs even a 0.6B model on a
+# 6GB card (see claude_notes/SESSION_2026-07-04_lora_and_oom_debugging.md). LoRA keeps the
+# trainable/optimizer state small enough to fit single-GPU VRAM; this is the one deliberate
+# deviation from the paper's own training methodology in this file.
 actor_train:
   model_args:
     flash_attn: fa2
@@ -94,7 +111,7 @@ actor_infer:
     disable_gradient_checkpointing: true
     dtype: bf16
   generating_args:
-    max_new_tokens: 2048
+    max_new_tokens: 4096 # single-turn response length -- matches the paper
     top_p: 0.99
     top_k: 100
     num_beams: 1
@@ -103,6 +120,10 @@ actor_infer:
   data_args:
     template: qwen3
   strategy_args:
+    # The paper's own configs use vllm; sglang is used here instead because clemcore's
+    # `mistralai` dependency (needed for Playpen) conflicts with vllm==0.8.4's own
+    # opentelemetry-api pin -- see claude_notes/SESSION_2026-07-05_playpen_integration.md.
+    # Generation semantics (temperature/top_p/top_k/max_new_tokens) are otherwise unchanged.
     strategy_name: sglang
     strategy_config:
       mem_fraction_static: 0.8
@@ -124,16 +145,16 @@ reference:
   infer_batch_size: 2
 
 enable_response_mask: True
-action_sep: "||"
+action_sep: "||" # inert for playpen envs (free-text, no MARSHAL wrapper) -- kept for parity
 use_turn_scores: True
-enable_think: False
-max_actions_per_traj: 10
+# Inert for playpen envs specifically (EnvManager never forces a <think>/<answer> wrapper
+# for BaseLanguageBasedEnv envs -- see claude_notes/SESSION_2026-07-11_playpen_reward_bypass.md).
+# Set to True to match the paper's own value; harmless either way for this env type.
+enable_think: True
+max_actions_per_traj: 50
 reward_normalization:
   grouping: tags
   method: mean
-  # clean_up is a cooperative multi-role game (every role played by the same learner policy) -- separate_norm_for_selfplay still applies since roles can
-  # differ in response length/difficulty even under a shared/cooperative reward, matching
-  # how it's already used for the cooperative hanabi env.
   separate_norm_for_selfplay: true
 whiten_rewards: true
 advantage_norm: mean
@@ -149,16 +170,19 @@ custom_envs:
       built_in_opponent: none
 
 train_env_manager:
+  # format_penalty is likewise inert for playpen envs (no MARSHAL reward shaping is ever
+  # added on top of the env's own reward for BaseLanguageBasedEnv envs) -- kept at the
+  # paper's own default value for parity/consistency.
   format_penalty: 0.05
-  max_env_num_per_worker: 1
-  env_groups: 1
+  max_env_num_per_worker: 64
+  env_groups: 64
   group_size: 1
   tags: [PlaypenCleanUp]
-  n_groups: [1]
+  n_groups: [64]
 
 val_env_manager:
-  max_env_num_per_worker: 1
-  env_groups: 1
+  max_env_num_per_worker: 64
+  env_groups: 64
   group_size: 1
   tags: [PlaypenCleanUp]
-  n_groups: [1]
+  n_groups: [64]
