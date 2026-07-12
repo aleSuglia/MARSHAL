@@ -17,6 +17,12 @@ output_dir: ./runs/${exp_name}/output
 
 system_envs:
   USE_MODELSCOPE: "1"
+  # Cheap, zero-risk addition: reduces allocator fragmentation (as literally suggested by
+  # the CUDA OOM message). Note: in the 2026-07-12 A100 OOM, "reserved but unallocated" was
+  # only ~61MB, so fragmentation wasn't the dominant cause there -- the real fix is the
+  # per_device_train_batch_size/gradient_accumulation_steps rebalance above. Kept anyway
+  # since it can't hurt and may help at the margin.
+  PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:True"
 
 track_with: tensorboard
 tracker_kwargs:
@@ -86,8 +92,12 @@ actor_train:
     weight_decay: 0.05
     adam_beta1: 0.9
     adam_beta2: 0.95
-    per_device_train_batch_size: 2
-    gradient_accumulation_steps: 2
+    # Halved vs. the paper-derived value (was 2/2) purely to fit single-GPU (TP=1) VRAM --
+    # product (effective per-GPU batch = 4) is unchanged, so this does not alter the
+    # training result, only how many smaller forward/backward passes each step is split
+    # into (slower, more memory-headroom). See claude_notes/SESSION_2026-07-12_*.md.
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 4
     warmup_steps: 10
   data_args:
     template: qwen3
