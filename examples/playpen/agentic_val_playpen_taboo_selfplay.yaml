@@ -95,7 +95,7 @@ actor_train:
     # Halved vs. the paper-derived value (was 2/2) purely to fit single-GPU (TP=1) VRAM --
     # product (effective per-GPU batch = 4) is unchanged, so this does not alter the
     # training result, only how many smaller forward/backward passes each step is split
-    # into (slower, more memory-headroom). See claude_notes/SESSION_2026-07-12_*.md.
+    # into (slower, more memory-headroom).
     per_device_train_batch_size: 1
     gradient_accumulation_steps: 4
     warmup_steps: 10
@@ -132,11 +132,11 @@ actor_infer:
   strategy_args:
     # The paper's own configs use vllm; sglang is used here instead because clemcore's
     # `mistralai` dependency (needed for Playpen) conflicts with vllm==0.8.4's own
-    # opentelemetry-api pin -- see claude_notes/SESSION_2026-07-05_playpen_integration.md.
+    # opentelemetry-api pin 
     # Generation semantics (temperature/top_p/top_k/max_new_tokens) are otherwise unchanged.
     strategy_name: sglang
     strategy_config:
-      mem_fraction_static: 0.8
+      mem_fraction_static: 0.6
       load_format: auto
   device_mapping: list(range(0,1))
 
