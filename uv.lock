@@ -17,6 +17,7 @@ conflicts = [[
 ]]
 
 [manifest]
+constraints = [{ name = "grpcio", specifier = "<1.71" }]
 
 [[manifest.dependency-metadata]]
 name = "transformer-engine-torch"
@@ -1423,23 +1424,19 @@ wheels = [
 
 [[package]]
 name = "grpcio"
-version = "1.81.1"
+version = "1.70.0"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/b5/1ff353970a87eda4c98251e34d2dfd214abd4982dc89119c9252a2a482d2/grpcio-1.81.1.tar.gz", hash = "sha256:6fa10a767143a5e82e8eaab53918af0cd8909a57a27f8cb2288b80a613ac671b", size = 13026582, upload-time = "2026-06-11T12:46:51.673Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/e1/4b21b5017c33f3600dcc32b802bb48fe44a4d36d6c066f52650c7c2690fa/grpcio-1.70.0.tar.gz", hash = "sha256:8d1584a68d5922330025881e63a6c1b54cc8117291d382e4fa69339b6d914c56", size = 12788932, upload-time = "2025-01-23T18:00:17.288Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/d5/f2b159d8eec08be2a855ef698f5b6f7f9fdda022e4dd9e4f5d968affd678/grpcio-1.81.1-cp310-cp310-linux_armv7l.whl", hash = "sha256:6f9a0c9c1cc15c112d1c053064fd032b64917062292c3d70aea280e02ae10b77", size = 6086868, upload-time = "2026-06-11T12:44:19.364Z" },
-    { url = "https://files.pythonhosted.org/packages/80/41/9c95232b94b219ed8b14029d9cd000e0381cafba869c451dda60af84f4ba/grpcio-1.81.1-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:69ef28e54fc85397f91b8c19592b8ef3d81952080366914823bd8572a2958120", size = 12062291, upload-time = "2026-06-11T12:44:27.142Z" },
-    { url = "https://files.pythonhosted.org/packages/83/8b/bd9284bdd665ddf877a3e8bc2930d1bcf6ebdbae7b0da5c783dc26bd6e33/grpcio-1.81.1-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:15641444eca4a29358107b3dceb74c1c6305c55c822fd199b458aaea4068a7fb", size = 6635242, upload-time = "2026-06-11T12:44:30.741Z" },
-    { url = "https://files.pythonhosted.org/packages/60/24/78fa025517a925f1a17da71c4ef9d5f1c6f9fa65af22dfb523c5c6317a21/grpcio-1.81.1-cp310-cp310-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:d4b2dddfc219f54f956ccd53cf76a1d338ffe68fc7f2849ec9c7feb9927ff692", size = 7332974, upload-time = "2026-06-11T12:44:33.72Z" },
-    { url = "https://files.pythonhosted.org/packages/f7/11/402295b388dd35861007f8a26a37c2e2f284212d57bdf407c31f36043746/grpcio-1.81.1-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ca1cc11d82677b9662082e5478b7528e2b7db7beaa6bdff42bd62789d81be399", size = 6836597, upload-time = "2026-06-11T12:44:36.108Z" },
-    { url = "https://files.pythonhosted.org/packages/4d/71/37b10fd4fd579ffade6e695c14e9df5e8cba9e2365b81c131da438b67c34/grpcio-1.81.1-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:aa2ba7d2ad6df4d80127cea65e5b8d5e2c3adbf153ff4804452836328aca7c54", size = 7440660, upload-time = "2026-06-11T12:44:38.664Z" },
-    { url = "https://files.pythonhosted.org/packages/4a/d5/40203f828abc83d458b634666df6df13778032f178c03845ad5a93682388/grpcio-1.81.1-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:592b5fee597faa91cce2dd294dd7d9a1c83d76c4dbf877e33ec1adb866b2fbed", size = 8443171, upload-time = "2026-06-11T12:44:41.678Z" },
-    { url = "https://files.pythonhosted.org/packages/eb/2c/0ed82ea35b5ec595e10444940c1db8c0e0ef57aa46bc8797d5ff838a219e/grpcio-1.81.1-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:62481553b1793a27e9b9c3cf9e5bd483ef045ca72462592074b46d42b0c4d9b9", size = 7868905, upload-time = "2026-06-11T12:44:44.854Z" },
-    { url = "https://files.pythonhosted.org/packages/9e/1f/dcbdc1a68a07cc2b631c3098953794f17d75f93426a019240b90ce5423d6/grpcio-1.81.1-cp310-cp310-win32.whl", hash = "sha256:bb693b1e3d9a2f3fd228e2110daf4b5aeedb36761ca1e4282f74725f6d89f611", size = 4202215, upload-time = "2026-06-11T12:44:47.165Z" },
-    { url = "https://files.pythonhosted.org/packages/75/a1/d7ab9f1f42efcb7d9e6111d38be6b367737a72ea2c534e1f55c81e1b6436/grpcio-1.81.1-cp310-cp310-win_amd64.whl", hash = "sha256:88268ca418cacea64cecb0d1d600d3c6b3a8038fcba02e1e205178c5b1f47661", size = 4936582, upload-time = "2026-06-11T12:44:49.479Z" },
+    { url = "https://files.pythonhosted.org/packages/10/e9/f72408bac1f7b05b25e4df569b02d6b200c8e7857193aa9f1df7a3744add/grpcio-1.70.0-cp310-cp310-linux_armv7l.whl", hash = "sha256:95469d1977429f45fe7df441f586521361e235982a0b39e33841549143ae2851", size = 5229736, upload-time = "2025-01-23T17:52:55.697Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/17/e65139ea76dac7bcd8a3f17cbd37e3d1a070c44db3098d0be5e14c5bd6a1/grpcio-1.70.0-cp310-cp310-macosx_12_0_universal2.whl", hash = "sha256:ed9718f17fbdb472e33b869c77a16d0b55e166b100ec57b016dc7de9c8d236bf", size = 11432751, upload-time = "2025-01-23T17:52:58.338Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/12/42de6082b4ab14a59d30b2fc7786882fdaa75813a4a4f3d4a8c4acd6ed59/grpcio-1.70.0-cp310-cp310-manylinux_2_17_aarch64.whl", hash = "sha256:374d014f29f9dfdb40510b041792e0e2828a1389281eb590df066e1cc2b404e5", size = 5711439, upload-time = "2025-01-23T17:53:21.438Z" },
+    { url = "https://files.pythonhosted.org/packages/34/f8/b5a19524d273cbd119274a387bb72d6fbb74578e13927a473bc34369f079/grpcio-1.70.0-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f2af68a6f5c8f78d56c145161544ad0febbd7479524a59c16b3e25053f39c87f", size = 6330777, upload-time = "2025-01-23T17:53:23.655Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/67/3d6c0ad786238aac7fa93b79246fc452978fbfe9e5f86f70da8e8a2797d0/grpcio-1.70.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ce7df14b2dcd1102a2ec32f621cc9fab6695effef516efbc6b063ad749867295", size = 5944639, upload-time = "2025-01-23T17:53:26.699Z" },
+    { url = "https://files.pythonhosted.org/packages/76/0d/d9f7cbc41c2743cf18236a29b6a582f41bd65572a7144d92b80bc1e68479/grpcio-1.70.0-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:c78b339869f4dbf89881e0b6fbf376313e4f845a42840a7bdf42ee6caed4b11f", size = 6643543, upload-time = "2025-01-23T17:53:30.758Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/24/bdd7e606b3400c14330e33a4698fa3a49e38a28c9e0a831441adbd3380d2/grpcio-1.70.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:58ad9ba575b39edef71f4798fdb5c7b6d02ad36d47949cd381d4392a5c9cbcd3", size = 6199897, upload-time = "2025-01-23T17:53:34.656Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/33/8132eb370087960c82d01b89faeb28f3e58f5619ffe19889f57c58a19c18/grpcio-1.70.0-cp310-cp310-win32.whl", hash = "sha256:2b0d02e4b25a5c1f9b6c7745d4fa06efc9fd6a611af0fb38d3ba956786b95199", size = 3617513, upload-time = "2025-01-23T17:53:37.323Z" },
+    { url = "https://files.pythonhosted.org/packages/99/bc/0fce5cfc0ca969df66f5dca6cf8d2258abb88146bf9ab89d8cf48e970137/grpcio-1.70.0-cp310-cp310-win_amd64.whl", hash = "sha256:0de706c0a5bb9d841e353f6343a9defc9fc35ec61d6eb6111802f3aa9fef29e1", size = 4303342, upload-time = "2025-01-23T17:53:41.719Z" },
 ]
 
 [[package]]
@@ -2172,8 +2169,7 @@ dependencies = [
     { name = "ray" },
     { name = "setuptools" },
     { name = "sympy" },
-    { name = "tensorboard", version = "2.20.0", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "tensorboard", version = "2.21.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
+    { name = "tensorboard" },
     { name = "tensordict" },
     { name = "torchao" },
     { name = "tqdm" },
@@ -4694,49 +4690,21 @@ wheels = [
 name = "tensorboard"
 version = "2.20.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')",
-]
 dependencies = [
-    { name = "absl-py", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "grpcio", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "markdown", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "numpy", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "packaging", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "pillow", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
+    { name = "absl-py" },
+    { name = "grpcio" },
+    { name = "markdown" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "pillow" },
     { name = "protobuf", version = "4.25.9", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "setuptools", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "tensorboard-data-server", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
-    { name = "werkzeug", marker = "(sys_platform != 'darwin' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-playpen' and extra == 'group-7-marshal-torch260-vllm') or (extra == 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm')" },
+    { name = "protobuf", version = "7.35.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
+    { name = "setuptools" },
+    { name = "tensorboard-data-server" },
+    { name = "werkzeug" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9c/d9/a5db55f88f258ac669a92858b70a714bbbd5acd993820b41ec4a96a4d77f/tensorboard-2.20.0-py3-none-any.whl", hash = "sha256:9dc9f978cb84c0723acf9a345d96c184f0293d18f166bb8d59ee098e6cfaaba6", size = 5525680, upload-time = "2025-07-17T19:20:49.638Z" },
-]
-
-[[package]]
-name = "tensorboard"
-version = "2.21.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "sys_platform == 'darwin' and extra != 'group-7-marshal-playpen' and extra != 'group-7-marshal-torch260-sglang' and extra == 'group-7-marshal-torch260-vllm'",
-    "extra == 'group-7-marshal-torch260-sglang' and extra != 'group-7-marshal-torch260-vllm'",
-    "extra != 'group-7-marshal-torch260-sglang' and extra != 'group-7-marshal-torch260-vllm'",
-]
-dependencies = [
-    { name = "absl-py", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "grpcio", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "markdown", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "numpy", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "packaging", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "pillow", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "protobuf", version = "7.35.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "setuptools", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "tensorboard-data-server", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-    { name = "werkzeug", marker = "sys_platform == 'darwin' or extra == 'group-7-marshal-playpen' or extra == 'group-7-marshal-torch260-sglang' or extra != 'group-7-marshal-torch260-vllm'" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/4b/cd2eec9642781a8f5b2fb9994e3933a7b259ab18e9d49aeede9b5acf6311/tensorboard-2.21.0-py3-none-any.whl", hash = "sha256:7279316dcb6bd5bc391d623dea841531299cde1887310e8133bc34a996d32255", size = 5516204, upload-time = "2026-06-29T20:48:04.472Z" },
 ]
 
 [[package]]

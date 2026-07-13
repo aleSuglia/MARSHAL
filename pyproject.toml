@@ -95,6 +95,13 @@ conflicts = [
 	[{ group = "torch260-vllm" }, { group = "torch260-sglang" }],
 	[{ group = "torch260-vllm" }, { group = "playpen" }],
 ]
+# grpcio is only a transitive dep (pulled in by ray) with no upper bound anywhere, so uv
+# resolves it to whatever's newest -- on Eddie that landed on 1.81.1, which segfaults
+# ray's dashboard_agent (raylet then fate-shares and kills the whole cluster). Matches two
+# open upstream bugs: ray-project/ray#53608 (Ray 2.46.0 + uv -> dashboard_agent segfault)
+# and ray-project/ray#53631 (worker registration failures with grpcio>=1.71.0). Capping
+# below that threshold until Ray fixes this upstream.
+constraint-dependencies = ["grpcio<1.71"]
 
 [tool.setuptools.packages.find]
 include = ["roll*"]
