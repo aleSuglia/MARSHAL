@@ -29,6 +29,16 @@ default_envs = {
     "NCCL_NVLS_ENABLE": "0",
     "ACCL_TUNING_LEVEL": "1",
 }
+if os.environ.get("LD_LIBRARY_PATH"):
+    # Force-propagate the driver's own LD_LIBRARY_PATH (e.g. set by `module load cuda/...`
+    # on HPC systems) into every Ray actor's runtime_env, the same way the CUDA/NCCL vars
+    # above already are. Without this, an actor's own process can have working CUDA while
+    # a subprocess it spawns internally (e.g. sglang's scheduler, via mp.Process in
+    # roll/third_party/sglang/v046post4_patch/engine.py) fails at exec time with
+    # "error while loading shared libraries: libcudart.so.12: cannot open shared object
+    # file" -- seen on Eddie, where libcudart is only resolvable via the module-set
+    # LD_LIBRARY_PATH, not bundled in the pip-installed torch wheel's own rpath.
+    default_envs["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
 
 
 def start_ray_cluster():
