@@ -59,7 +59,18 @@ class ResourceManager:
                 # NODE_RANK environment variable is not set in the cluster, so a default value is used for NODE_RANK.
                 self.node_ranks = list(range(len(self.placement_groups)))
 
-            self.gpu_ranks = [int(gpu_rank[0]) for gpu_rank in gpu_ranks]
+            # ray.get_gpu_ids() returns plain integer indices when CUDA_VISIBLE_DEVICES is set
+            # that way (e.g. "0"), but some schedulers (e.g. Eddie's Grid Engine GPU allocation)
+            # set CUDA_VISIBLE_DEVICES to the GPU's UUID string instead (e.g.
+            # "GPU-139befa2-..."), which int() can't parse. self.gpu_ranks isn't read anywhere
+            # else in the codebase, so keep the raw id in that case rather than failing.
+            def _to_gpu_rank(gpu_id):
+                try:
+                    return int(gpu_id)
+                except ValueError:
+                    return gpu_id
+
+            self.gpu_ranks = [_to_gpu_rank(gpu_rank[0]) for gpu_rank in gpu_ranks]
             self.node2pg: Dict[int, PlacementGroup] = {}
             for node_rank, placement_group in zip(self.node_ranks, self.placement_groups):
                 self.node2pg[node_rank] = placement_group
